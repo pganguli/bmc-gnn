@@ -51,19 +51,20 @@ def run_engine(selected_engine, circuit, FLAGS):
             D = line
     return last_valid_line
 
-def process_circuits(start_time, total_time, cir_name, FRAME, end_time, engine_sequence, count, s, FLAGS, CURR_FRAME):
+def process_circuits(start_time, total_time, FRAME, end_time, engine_sequence, count, s, FLAGS, CURR_FRAME):
     global TIMELIMIT
+    cir_name = (args.input_circuit.split("/")[-1]).split(".")[0]
     #os.chdir('circuits')
-    for file in os.listdir(args.circuit_path):
+    for file in os.listdir(args.known_circuit_path):
         if time.time() - start_time > total_time:
             break  # Exit the loop if total time has exceeded
         if file.endswith('.aig') and cir_name not in file:
-            unf.unfold_circuit(f"{args.circuit_path}/{file}", FRAME)
+            unf.unfold_circuit(f"{args.known_circuit_path}/{file}", FRAME, args.unfold_path)
     #os.chdir('../')
-    cir = unf.unfold_circuit(args.circuit, FRAME)
+    cir = unf.unfold_circuit(args.input_circuit, FRAME, args.unfold_path)
     #print(cir)
-    req_cir = mSimCir.most_similar_circuit(cir, FRAME)
-    #print(req_cir)
+    req_cir = mSimCir.most_similar_circuit(cir, FRAME, args.unfold_path)
+    print(req_cir)
     #os.chdir(f'../csv/{req_cir}')
     ret = ext_fr.extract_frame_time(FRAME,f"{args.csv_path}/{req_cir}")
     min_time = 4000
@@ -89,7 +90,7 @@ def process_circuits(start_time, total_time, cir_name, FRAME, end_time, engine_s
         for x, y in engine_sequence.items():
             print(f"{x}: {y}")
         print(f"No engine found, hence running bmc3 -g for the remaining time : {TIMELIMIT} secs\n")
-        depth_reached = run_engine("bmc3 -g", args.circuit, FLAGS)
+        depth_reached = run_engine("bmc3 -g", args.input_circuit, FLAGS)
         if depth_reached is None:
             return FRAME, -1, False, None
 
@@ -109,10 +110,11 @@ def process_circuits(start_time, total_time, cir_name, FRAME, end_time, engine_s
     count += 1
     print(f"Outcome at DEPTH ({FRAME}) : Most similar circuit: {req_cir}.aig, Best BMC engine for {req_cir} at Depth {FRAME} : {selected_engine}\n")
     #os.chdir("../../")
-    depth_reached = run_engine(selected_engine, args.circuit, FLAGS)
+    depth_reached = run_engine(selected_engine, args.input_circuit, FLAGS)
     if depth_reached is None:
-        print(f"Running {selected_engine} on {args.circuit} for {TIMELIMIT} second, Depth reached : {FRAME}\n")
-        os.chdir("exp_unf")
+        print(f"Running {selected_engine} on {args.input_circuit.split('/')[-1]} for {TIMELIMIT} second, Depth reached : {FRAME}\n")
+        print(f"\n{D}\n")
+        #os.chdir("exp_unf")
         return FRAME, -1, True, selected_engine
 
     if "+" in depth_reached:
@@ -121,7 +123,8 @@ def process_circuits(start_time, total_time, cir_name, FRAME, end_time, engine_s
         for part in depth_reached.split('.'):
             if "F =" in part:
                 FRAME = int(part.split('=')[1].strip())
-    print(f"Running {selected_engine} on {args.circuit} for {TIMELIMIT} second, Depth reached : {FRAME}\n")
+    print(f"Running {selected_engine} on {args.input_circuit.split('/')[-1]} for {TIMELIMIT} second, Depth reached : {FRAME}\n")
+    print(f"\n{D}\n")
     #os.chdir("exp_unf")
     if(CURR_FRAME == FRAME):
         return FRAME,-1,True, selected_engine 
@@ -129,15 +132,14 @@ def process_circuits(start_time, total_time, cir_name, FRAME, end_time, engine_s
 
 def run_f_mode(args):
     global TIMELIMIT, total_time, FRAME, start_time, end_time
-    circuit = args.circuit
+    #circuit = args.input_circuit
     T = TIMELIMIT
     mod_time = T
     first_iter = True
     START_FRAME = 0
     CURR_FRAME = 0
     count = 1
-    first_simcheck_done = False    
-    cir_name = (circuit.split("/")[-1]).split(".")[0]
+    first_simcheck_done = False
     selected_engine = None
     print(f"\nTotal execution time: {total_time} seconds (Start to End of the Framework)\n")
     signal.signal(signal.SIGALRM, terminate_process)  # Set the signal handler for SIGALRM
@@ -156,9 +158,10 @@ def run_f_mode(args):
                     #print(os.getcwd())
                     #os.chdir('../')
                     print(f"Starting at DEPTH ({START_FRAME}) : \n")
-                    depth_reached = run_engine(selected_engine, circuit, FLAGS)
+                    depth_reached = run_engine(selected_engine, args.input_circuit, FLAGS)
                     if depth_reached is None:
-                        print(f"Running {selected_engine} on {circuit} for {mod_time} second, Depth reached : {FRAME}\n")
+                        print(f"Running {selected_engine} on {args.input_circuit.split('/')[-1]} for {mod_time} second, Depth reached : {FRAME}\n")
+                        print(f"\n{D}\n")
                         START_FRAME = -1
                         #os.chdir('exp_unf')
                         first_simcheck_done = True
@@ -172,17 +175,18 @@ def run_f_mode(args):
                     START_FRAME = FRAME
                     if(CURR_FRAME == START_FRAME):
                         START_FRAME = -1
-                    print(f"Running {selected_engine} on {circuit} for {mod_time} second, Depth reached : {FRAME}\n")
+                    print(f"Running {selected_engine} on {args.input_circuit.split('/')[-1]} for {mod_time} second, Depth reached : {FRAME}\n")
+                    print(f"\n{D}\n")
                     first_simcheck_done = True
                     #os.chdir('exp_unf')
                     continue
             else:
                 print("Since no developement, computing new similar circuit")
-                FRAME, START_FRAME, continue_loop, selected_engine = process_circuits(start_time, total_time,cir_name, FRAME, end_time, engine_sequence, count, s, FLAGS, CURR_FRAME)
+                FRAME, START_FRAME, continue_loop, selected_engine = process_circuits(start_time, total_time, FRAME, end_time, engine_sequence, count, s, FLAGS, CURR_FRAME)
                 if not continue_loop:
                     break
                 continue
-            FRAME, START_FRAME, continue_loop, selected_engine = process_circuits(start_time, total_time, cir_name, FRAME, end_time, engine_sequence, count, s, FLAGS, CURR_FRAME)
+            FRAME, START_FRAME, continue_loop, selected_engine = process_circuits(start_time, total_time, FRAME, end_time, engine_sequence, count, s, FLAGS, CURR_FRAME)
             if not continue_loop:
                 break
             first_simcheck_done = True
@@ -194,9 +198,10 @@ def main():
     global args
     parser = argparse.ArgumentParser(description='BMC Sequence Script')
     parser.add_argument('-f', action='store_true', help='Run in mode --> Fixed')
-    parser.add_argument('--circuit', type=str, help='Name of the circuit')
-    parser.add_argument('--circuit_path', type=str, help='Path to the circuits directory')
+    parser.add_argument('--input_circuit', type=str, help='Name of the input circuit')
+    parser.add_argument('--known_circuit_path', type=str, help='Path to the known circuits directory')
     parser.add_argument('--csv_path', type=str, help='Path to the CSV directory')
+    parser.add_argument('--unfold_path', type=str, help='Path to the unfold directory')
     args = parser.parse_args()
     if args.f:
         run_f_mode(args)

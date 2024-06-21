@@ -17,9 +17,10 @@ def compare_files(file_list, circuit, result_list):
             print(f"Error comparing file {file_path}: {str(e)}")
     result_list.append((local_most_similar_circuit, local_max_similarity))
 
-def most_similar_circuit(circuit, level, num_processes=8):
+def most_similar_circuit(circuit, level, path, num_processes=8):
     cir_name = (circuit.split("/")[-1]).split("_")
-    current_directory = os.getcwd()
+    #print(cir_name)
+    current_directory = path
     manager = Manager()
     result_list = manager.list()
     processes = []
