@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "bmc-gnn"
+version = "0.1.0"
+description = ""
+authors = ["Adriz Chanda <adrizchanda1303@gmail.com>", "Prateek Ganguli <prateek.ganguli@gmail.com>"]
+packages = [{include = "bmc_gnn"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+deepgate = {git = "https://github.com/pganguli/python-deepgate", rev = "main"}
+pandas = "^2.2.2"
+torch-geometric = "^2.5.3"
+torch = {version = "^2.3.1+cpu", source = "pytorch-cpu-src"}
+
+[[tool.poetry.source]]
+name = "pytorch-cpu-src"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
+
+[[tool.poetry.source]]
+name = "pyg-src"
+url = "https://data.pyg.org/whl"
+priority = "explicit"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
