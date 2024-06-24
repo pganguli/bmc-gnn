@@ -4,6 +4,9 @@ import re
 import signal
 import subprocess
 import time
+import pandas as pd
+import numpy as np
+import pickle
 
 from bmc_gnn.extract_bmc_engine import extract_bmc_engine
 from bmc_gnn.extract_frame_time import extract_frame_time
@@ -272,10 +275,124 @@ def run_f_mode(args):
     finally:
         signal.alarm(0)  # Disable the alarm
 
+def run_v_mode(args):
+    with open('bmc_gnn/model.pkl', 'rb') as pkl_file:
+        model_dict = pickle.load(pkl_file)
+    feature_cols = ['F','Var', 'Cla','Conf','Learn']
+    global TIMELIMIT, total_time, FRAME, start_time, end_time
+    # circuit = args.input_circuit
+    T = TIMELIMIT
+    mod_time = T
+    first_iter = True
+    START_FRAME = 0
+    CURR_FRAME = 0
+    count = 1
+    first_simcheck_done = False
+    selected_engine = None
+    print(
+        f"\nTotal execution time: {total_time} seconds (Start to End of the Framework)\n"
+    )
+    signal.signal(
+        signal.SIGALRM, terminate_process
+    )  # Set the signal handler for SIGALRM
+    signal.alarm(total_time)  # Schedule an alarm for the total execution time
+    try:
+        while time.time() - start_time <= total_time:
+            s = time.time()
+            print(
+                "============================================================================================================================================================================================================\n"
+            )
+            if (
+                (CURR_FRAME != START_FRAME and START_FRAME != -1)
+                or first_iter
+                or START_FRAME != -1
+            ):
+                first_iter = False
+                CURR_FRAME = START_FRAME
+                FLAGS = f"-S {START_FRAME} -T {TIMELIMIT} -F 0 -v"
+                if first_simcheck_done:
+                    mod_time = 2 * mod_time
+                    FLAGS = f"-S {START_FRAME} -T {mod_time} -F 0 -v"
+                    # print(os.getcwd())
+                    # os.chdir('../')
+                    print(f"Starting at DEPTH ({START_FRAME}) : \n")
+                    depth_reached = run_engine(
+                        selected_engine, args.input_circuit, FLAGS
+                    )
+                    if depth_reached is None:
+                        print(
+                            f"Running {selected_engine} on {args.input_circuit.split('/')[-1]} for {mod_time} second, Depth reached : {FRAME}\n"
+                        )
+                        print(f"\n{D}\n")
+                        START_FRAME = -1
+                        # os.chdir('exp_unf')
+                        first_simcheck_done = True
+                        continue
+                    if "+" in depth_reached:
+                        FRAME = int(
+                            depth_reached.split(":")[0].strip().split("+")[0].strip()
+                        )
+                    else:
+                        for part in depth_reached.split("."):
+                            if "F =" in part:
+                                FRAME = int(part.split("=")[1].strip())
+                    START_FRAME = FRAME
+                    if CURR_FRAME == START_FRAME:
+                        START_FRAME = -1
+                    print(
+                        f"Running {selected_engine} on {args.input_circuit.split('/')[-1]} for {mod_time} second, Depth reached : {FRAME}\n"
+                    )
+                    print(f"\n**{D}\n")
+                    first_simcheck_done = True
+                    # os.chdir('exp_unf')
+                    continue
+            else:
+                print("Since no developement, computing new similar circuit")
+                FRAME, START_FRAME, continue_loop, selected_engine = process_circuits(
+                    start_time,
+                    total_time,
+                    FRAME,
+                    end_time,
+                    engine_sequence,
+                    count,
+                    s,
+                    FLAGS,
+                    CURR_FRAME,
+                )
+                if not continue_loop:
+                    break
+                continue
+            FRAME, START_FRAME, continue_loop, selected_engine = process_circuits(
+                start_time,
+                total_time,
+                FRAME,
+                end_time,
+                engine_sequence,
+                count,
+                s,
+                FLAGS,
+                CURR_FRAME,
+            )
+            ''' Extracting data from current depth reached for Time prediction.'''
+            predictors = re.findall(r'\b\d+\b', D)
+            predictors = np.asarray([int(num) for num in predictors[:5]])
+            predictor_data = pd.DataFrame(data = predictors.reshape(1,-1), columns = feature_cols)
+            print(predictor_data)
+            pred_time = model_dict['bmc3u'].predict(predictor_data)
+            print(pred_time)
+            if not continue_loop:
+                break
+            first_simcheck_done = True
+    except Exception as e:
+        print(f"An exception occurred: {e}")
+    finally:
+        signal.alarm(0)  # Disable the alarm
+
 
 def main():
     global args
     parser = argparse.ArgumentParser(description="BMC Sequence Script")
+    parser.add_argument("-v", action="store_true", help="Run in mode --> Variable")
     parser.add_argument("-f", action="store_true", help="Run in mode --> Fixed")
     parser.add_argument("--input_circuit", type=str, help="Name of the input circuit")
     parser.add_argument(
@@ -286,8 +403,10 @@ def main():
     args = parser.parse_args()
     if args.f:
         run_f_mode(args)
+    elif args.v:
+        run_v_mode(args)
     else:
-        print("Please specify a mode with -f")
+        print("Please specify a mode with -f or -v")
 
 
 if __name__ == "__main__":
