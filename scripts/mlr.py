@@ -23,14 +23,6 @@ for bmc_engine in bmc_engines:
     csv_files = list(ENGINE_TRAIN_DATA_PATH.glob("*.csv"))
     for csv_file in csv_files:
         df = pd.read_csv(csv_file)
-        print(df.dtypes)
-
-        for feature_col in feature_cols:
-            df[feature_col] = pd.to_numeric(df[feature_col])
-        df["Time"] = pd.to_numeric(df["Time"])
-        df["del_T"] = df["Time"].diff()
-
-        df = df.dropna(how="any")
 
         X = pd.DataFrame(pd.concat([X, df[feature_cols]], axis=0))
         y = pd.DataFrame(pd.concat([y, df[target_col]], axis=0))
