@@ -276,7 +276,7 @@ def run_f_mode(args):
         signal.alarm(0)  # Disable the alarm
 
 def run_v_mode(args):
-    with open('bmc_gnn/model.pkl', 'rb') as pkl_file:
+    with open('data/model.pkl', 'rb') as pkl_file:
         model_dict = pickle.load(pkl_file)
     feature_cols = ['F','Var', 'Cla','Conf','Learn']
     global TIMELIMIT, total_time, FRAME, start_time, end_time
