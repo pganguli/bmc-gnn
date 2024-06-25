@@ -1,12 +1,5 @@
 def extract_bmc_engine(engine):
-    start_index = engine.find("bmc")
-    end_index = engine.find(".csv")
-    portion = None
-    if start_index != -1 and end_index != -1:
-        portion = engine[start_index:end_index]
-    else:
-        return None
-    dictionary = {
+    bmc_engines = {
         "bmc2": "bmc2",
         "bmc3": "bmc3",
         "bmc3g": "bmc3 -g",
@@ -15,8 +8,8 @@ def extract_bmc_engine(engine):
         "bmc3s": "bmc3 -s",
         "bmc3j": "bmc3J",
     }
-    if portion in dictionary:
-        selected_engine = dictionary[portion]
+    if engine in bmc_engines:
+        selected_engine = bmc_engines[engine]
         return selected_engine
     else:
         return None

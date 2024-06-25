@@ -22,6 +22,16 @@ end_time = start_time + total_time
 D = ""
 
 
+def extract_data():
+    predictors = re.sub(r'[^0-9 \.]', '', D)
+    predictors = re.sub(r'\s+', ' ', predictors)
+    predictors = re.sub(r'(\d)\. ', r'\1 ', predictors)
+    predictors = predictors.strip()
+    predictors = predictors.replace(' ', ',')
+    predictors = re.split(',', predictors)
+    predictors = ([float(num) if '.' in num else int(num) for num in predictors])
+    return predictors
+
 def terminate_process(signum, frame):
     """Terminate the process when the time limit is exceeded."""
     print(
@@ -61,7 +71,7 @@ def run_engine(selected_engine, circuit, FLAGS):
             # print(line)
             break
         line = line.strip()
-        # print(line)
+        #print(line)
         output.append(line)
 
         if any(line.startswith(x) for x in ["Reached", "Runtime", "No output"]):
@@ -91,9 +101,8 @@ def process_circuits(
         if file.endswith(".aig") and cir_name not in file:
             unfold_circuit(f"{args.known_circuit_path}/{file}", FRAME, args.unfold_path)
     cir = unfold_circuit(args.input_circuit, FRAME, args.unfold_path)
-    req_cir = most_similar_circuit(cir, FRAME, args.unfold_path)
-    print(req_cir)
-    ret = extract_frame_time(FRAME, f"{args.csv_path}/{req_cir}")
+    best_friend = most_similar_circuit(cir, FRAME, args.unfold_path)
+    ret = extract_frame_time(FRAME, args.csv_path, best_friend)
     min_time = 4000
     engine = None
     for result in ret:
@@ -120,7 +129,7 @@ def process_circuits(
         )
         depth_reached = run_engine("bmc3 -g", args.input_circuit, FLAGS)
         if depth_reached is None:
-            return FRAME, -1, False, None
+            return FRAME, -1, False, None, None
 
         if "+" in depth_reached:
             FRAME = int(depth_reached.split(":")[0].strip().split("+")[0].strip())
@@ -130,7 +139,7 @@ def process_circuits(
                 if "F =" in part:
                     FRAME = int(part.split("=")[1].strip())
                     print(f"FINAL FRAME REACHED IS {FRAME}\n")
-        return FRAME, -1, False, "bmc3 -g"
+        return FRAME, -1, False, "bmc3 -g", "bmc3g"
 
     selected_engine = extract_bmc_engine(engine)
     print(
@@ -139,7 +148,7 @@ def process_circuits(
     engine_sequence[count] = selected_engine
     count += 1
     print(
-        f"Outcome at DEPTH ({FRAME}) : Most similar circuit: {req_cir}.aig, Best BMC engine for {req_cir} at Depth {FRAME} : {selected_engine}\n"
+        f"Outcome at DEPTH ({FRAME}) : Most similar circuit: {best_friend}.aig, Best BMC engine for {best_friend} at Depth {FRAME} : {selected_engine}\n"
     )
     # os.chdir("../../")
     depth_reached = run_engine(selected_engine, args.input_circuit, FLAGS)
@@ -147,9 +156,9 @@ def process_circuits(
         print(
             f"Running {selected_engine} on {args.input_circuit.split('/')[-1]} for {TIMELIMIT} second, Depth reached : {FRAME}\n"
         )
-        print(f"\n{D}\n")
+        print(f"{D}\n")
         # os.chdir("exp_unf")
-        return FRAME, -1, True, selected_engine
+        return FRAME, -1, True, selected_engine, engine
 
     if "+" in depth_reached:
         FRAME = int(depth_reached.split(":")[0].strip().split("+")[0].strip())
@@ -160,11 +169,11 @@ def process_circuits(
     print(
         f"Running {selected_engine} on {args.input_circuit.split('/')[-1]} for {TIMELIMIT} second, Depth reached : {FRAME}\n"
     )
-    print(f"\n{D}\n")
+    print(f"{D}\n")
     # os.chdir("exp_unf")
     if CURR_FRAME == FRAME:
-        return FRAME, -1, True, selected_engine
-    return FRAME, FRAME, True, selected_engine
+        return FRAME, -1, True, selected_engine, engine
+    return FRAME, FRAME, True, selected_engine, engine
 
 
 def run_f_mode(args):
@@ -200,11 +209,14 @@ def run_f_mode(args):
                 CURR_FRAME = START_FRAME
                 FLAGS = f"-S {START_FRAME} -T {TIMELIMIT} -F 0 -v"
                 if first_simcheck_done:
+                    last_depth_data = extract_data()
+                    time_wasted = round(mod_time - float(last_depth_data[7]),2)
+                    print(f'Time wasted in previous iteration is : {time_wasted} sec')
                     mod_time = 2 * mod_time
                     FLAGS = f"-S {START_FRAME} -T {mod_time} -F 0 -v"
                     # print(os.getcwd())
                     # os.chdir('../')
-                    print(f"Starting at DEPTH ({START_FRAME}) : \n")
+                    print(f"\nStarting at DEPTH ({START_FRAME}) : \n")
                     depth_reached = run_engine(
                         selected_engine, args.input_circuit, FLAGS
                     )
@@ -212,7 +224,7 @@ def run_f_mode(args):
                         print(
                             f"Running {selected_engine} on {args.input_circuit.split('/')[-1]} for {mod_time} second, Depth reached : {FRAME}\n"
                         )
-                        print(f"\n{D}\n")
+                        print(f"{D}\n")
                         START_FRAME = -1
                         # os.chdir('exp_unf')
                         first_simcheck_done = True
@@ -231,13 +243,13 @@ def run_f_mode(args):
                     print(
                         f"Running {selected_engine} on {args.input_circuit.split('/')[-1]} for {mod_time} second, Depth reached : {FRAME}\n"
                     )
-                    print(f"\n{D}\n")
+                    print(f"{D}\n")
                     first_simcheck_done = True
                     # os.chdir('exp_unf')
                     continue
             else:
                 print("Since no developement, computing new similar circuit")
-                FRAME, START_FRAME, continue_loop, selected_engine = process_circuits(
+                FRAME, START_FRAME, continue_loop, selected_engine, engine = process_circuits(
                     start_time,
                     total_time,
                     FRAME,
@@ -251,7 +263,7 @@ def run_f_mode(args):
                 if not continue_loop:
                     break
                 continue
-            FRAME, START_FRAME, continue_loop, selected_engine = process_circuits(
+            FRAME, START_FRAME, continue_loop, selected_engine, engine = process_circuits(
                 start_time,
                 total_time,
                 FRAME,
@@ -273,7 +285,7 @@ def run_f_mode(args):
 def run_v_mode(args):
     with open('data/model.pkl', 'rb') as pkl_file:
         model_dict = pickle.load(pkl_file)
-    feature_cols = ['F','Var', 'Cla','Conf','Learn']
+    feature_cols = ['Var', 'Cla','Conf','Learn']
     global TIMELIMIT, total_time, FRAME, start_time, end_time
     # circuit = args.input_circuit
     T = TIMELIMIT
@@ -306,44 +318,54 @@ def run_v_mode(args):
                 CURR_FRAME = START_FRAME
                 FLAGS = f"-S {START_FRAME} -T {TIMELIMIT} -F 0 -v"
                 if first_simcheck_done:
-                    mod_time = 2 * mod_time
-                    FLAGS = f"-S {START_FRAME} -T {mod_time} -F 0 -v"
+                    last_depth_data = extract_data()
+                    time_wasted = round(mod_time - float(last_depth_data[7]),2)
+                    print(f'Time wasted in previous iteration is : {time_wasted} sec')
+                    if time_wasted <= (args.p * mod_time):
+                        '''Time prediction by model'''
+                        last_depth_data = [int(value) for value in last_depth_data[1:5]]
+                        predictor_data = pd.DataFrame(data = np.asarray(last_depth_data).reshape(1,-1), columns = feature_cols)
+                        pred_time = model_dict[engine].predict(predictor_data)[0]
+                        del_T = round(pred_time[0],2)
+                        print(f'\nPredicted del_T is : {del_T} sec')
+                        mod_time = round(float((mod_time + del_T)/2),2)
+                        FLAGS = f"-S {START_FRAME} -T {mod_time} -F 0 -v"
                     # print(os.getcwd())
                     # os.chdir('../')
-                    print(f"Starting at DEPTH ({START_FRAME}) : \n")
-                    depth_reached = run_engine(
-                        selected_engine, args.input_circuit, FLAGS
-                    )
-                    if depth_reached is None:
+                        print(f"\nStarting at DEPTH ({START_FRAME}) : \n")
+                        depth_reached = run_engine(
+                            selected_engine, args.input_circuit, FLAGS
+                        )
+                        if depth_reached is None:
+                            print(
+                                f"Running {selected_engine} on {args.input_circuit.split('/')[-1]} for {mod_time} second, Depth reached : {FRAME}\n"
+                            )
+                            print(f"{D}\n")
+                            START_FRAME = -1
+                        # os.chdir('exp_unf')
+                            first_simcheck_done = True
+                            continue
+                        if "+" in depth_reached:
+                            FRAME = int(
+                            depth_reached.split(":")[0].strip().split("+")[0].strip()
+                            )
+                        else:
+                            for part in depth_reached.split("."):
+                                if "F =" in part:
+                                    FRAME = int(part.split("=")[1].strip())
+                        START_FRAME = FRAME
+                        if CURR_FRAME == START_FRAME:
+                            START_FRAME = -1
                         print(
                             f"Running {selected_engine} on {args.input_circuit.split('/')[-1]} for {mod_time} second, Depth reached : {FRAME}\n"
                         )
-                        print(f"\n{D}\n")
-                        START_FRAME = -1
-                        # os.chdir('exp_unf')
+                        print(f"{D}\n")
                         first_simcheck_done = True
-                        continue
-                    if "+" in depth_reached:
-                        FRAME = int(
-                            depth_reached.split(":")[0].strip().split("+")[0].strip()
-                        )
-                    else:
-                        for part in depth_reached.split("."):
-                            if "F =" in part:
-                                FRAME = int(part.split("=")[1].strip())
-                    START_FRAME = FRAME
-                    if CURR_FRAME == START_FRAME:
-                        START_FRAME = -1
-                    print(
-                        f"Running {selected_engine} on {args.input_circuit.split('/')[-1]} for {mod_time} second, Depth reached : {FRAME}\n"
-                    )
-                    print(f"\n**{D}\n")
-                    first_simcheck_done = True
                     # os.chdir('exp_unf')
-                    continue
+                        continue
             else:
                 print("Since no developement, computing new similar circuit")
-                FRAME, START_FRAME, continue_loop, selected_engine = process_circuits(
+                FRAME, START_FRAME, continue_loop, selected_engine, engine = process_circuits(
                     start_time,
                     total_time,
                     FRAME,
@@ -357,7 +379,7 @@ def run_v_mode(args):
                 if not continue_loop:
                     break
                 continue
-            FRAME, START_FRAME, continue_loop, selected_engine = process_circuits(
+            FRAME, START_FRAME, continue_loop, selected_engine, engine = process_circuits(
                 start_time,
                 total_time,
                 FRAME,
@@ -368,13 +390,7 @@ def run_v_mode(args):
                 FLAGS,
                 CURR_FRAME,
             )
-            ''' Extracting data from current depth reached for Time prediction.'''
-            predictors = re.findall(r'\b\d+\b', D)
-            predictors = np.asarray([int(num) for num in predictors[:5]])
-            predictor_data = pd.DataFrame(data = predictors.reshape(1,-1), columns = feature_cols)
-            print(predictor_data)
-            pred_time = model_dict['bmc3u'].predict(predictor_data)
-            print(pred_time)
+              
             if not continue_loop:
                 break
             first_simcheck_done = True
@@ -384,8 +400,18 @@ def run_v_mode(args):
         signal.alarm(0)  # Disable the alarm
 
 
+def valid_range(value):
+    damping_factor = float(value)
+    if damping_factor < 0 or damping_factor > 1:
+        raise argparse.ArgumentTypeError(f"Value must be between 0 and 1. Provided value : {value}")
+    return damping_factor
 def main():
     global args
+    initial_parser = argparse.ArgumentParser(description="BMC Sequence Script", add_help=False)
+    initial_parser.add_argument("-v", action="store_true", help="Run in mode --> Variable")
+    initial_parser.add_argument("-f", action="store_true", help="Run in mode --> Fixed")
+    initial_args, remaining_argv = initial_parser.parse_known_args()
+    
     parser = argparse.ArgumentParser(description="BMC Sequence Script")
     parser.add_argument("-v", action="store_true", help="Run in mode --> Variable")
     parser.add_argument("-f", action="store_true", help="Run in mode --> Fixed")
@@ -395,6 +421,8 @@ def main():
     )
     parser.add_argument("--csv_path", type=str, help="Path to the CSV directory")
     parser.add_argument("--unfold_path", type=str, help="Path to the unfold directory")
+    if initial_args.v:
+        parser.add_argument("--p", type=valid_range, help="Argument specific to Variable mode", default = 0.8)
     args = parser.parse_args()
     if args.f:
         run_f_mode(args)
