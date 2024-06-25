@@ -85,18 +85,14 @@ def process_circuits(
 ):
     global TIMELIMIT
     cir_name = (args.input_circuit.split("/")[-1]).split(".")[0]
-    # os.chdir('circuits')
     for file in os.listdir(args.known_circuit_path):
         if time.time() - start_time > total_time:
             break  # Exit the loop if total time has exceeded
         if file.endswith(".aig") and cir_name not in file:
             unfold_circuit(f"{args.known_circuit_path}/{file}", FRAME, args.unfold_path)
-    # os.chdir('../')
     cir = unfold_circuit(args.input_circuit, FRAME, args.unfold_path)
-    # print(cir)
     req_cir = most_similar_circuit(cir, FRAME, args.unfold_path)
     print(req_cir)
-    # os.chdir(f'../csv/{req_cir}')
     ret = extract_frame_time(FRAME, f"{args.csv_path}/{req_cir}")
     min_time = 4000
     engine = None
@@ -113,7 +109,6 @@ def process_circuits(
             engine = result[0]
 
     if engine is None:  # No engine gets selected.
-        # os.chdir("../../")
         TIMELIMIT = int(end_time - time.time())
         FLAGS = f"-S {FRAME} -T {TIMELIMIT} -F 0 -v"
         engine_sequence[count] = "bmc -g"
