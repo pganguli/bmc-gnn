@@ -1,5 +1,8 @@
 bmc_data_circuits/
+bmc_data_csv/
+bmc_data_txt/
 circuits/
+known_circuits/
 mab_bmc_sat_circuits_reported/
 mab_bmc_unsat_circuits_reported/
 test_data_csv/

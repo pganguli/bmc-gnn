@@ -14,7 +14,7 @@ from sklearn.linear_model import LinearRegression
 
 BMC_ENGINES = ["bmc2", "bmc3", "bmc3g", "bmc3r", "bmc3u", "bmc3s", "bmc3j"]
 FEATURE_COLS = ["Var", "Cla", "Conf", "Learn"]
-TARGET_COL = ["Time"]
+TARGET_COL = ["del_T"]
 
 
 def train(
@@ -34,6 +34,9 @@ def train(
         csv_files = list(engine_train_data_path.glob("*.csv"))
         for csv_file in csv_files:
             df = pd.read_csv(csv_file)
+
+            df['del_T'] = df['Time'].diff()
+            df = df.dropna(how='any')
 
             X = pd.DataFrame(pd.concat([X, df[feature_cols]], axis=0))
             y = pd.DataFrame(pd.concat([y, df[target_col]], axis=0))

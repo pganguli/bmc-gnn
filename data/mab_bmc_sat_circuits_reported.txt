@@ -1,8 +1,0 @@
-6s100.aig
-6s20.aig
-6s309b034.aig
-6s320rb0.aig
-6s54.aig
-6s7.aig
-intel040.aig
-intel043.aig
