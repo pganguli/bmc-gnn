@@ -21,11 +21,11 @@ FRAME = 2
 engine_sequence = {}
 start_time = time.time()
 end_time = start_time + total_time
-D = ""
+bmc_data_last_depth = ""
 
 
 def extract_data():
-    predictors = re.sub(r'[^0-9 \.]', '', D)
+    predictors = re.sub(r'[^0-9 \.]', '', bmc_data_last_depth)
     predictors = re.sub(r'\s+', ' ', predictors)
     predictors = re.sub(r'(\d)\. ', r'\1 ', predictors)
     predictors = predictors.strip()
@@ -41,7 +41,7 @@ def terminate_process(signum, frame):
     )
     for x, y in engine_sequence.items():
         print(f"{x}: {y}")
-    print(f"\n{D}\n")
+    print(f"\n{bmc_data_last_depth}\n")
     print(
         f"Delay between actual termination time and expected termination time: {round(time.time() - end_time, 2)} secs."
     )
@@ -49,7 +49,7 @@ def terminate_process(signum, frame):
 
 
 def run_engine(selected_engine, circuit, FLAGS):
-    global D
+    global bmc_data_last_depth
     if selected_engine == "bmcJ":
         command = [
             "abc",
@@ -80,7 +80,7 @@ def run_engine(selected_engine, circuit, FLAGS):
             break
         elif re.match(r"^\d+ \+ :", line):
             last_valid_line = line
-            D = line
+            bmc_data_last_depth = line
     return last_valid_line
 
 
@@ -135,7 +135,7 @@ def process_circuits(
 
         if "+" in depth_reached:
             FRAME = int(depth_reached.split(":")[0].strip().split("+")[0].strip())
-            print(f"FINAL FRAME REACHED IS {D}\n")
+            print(f"FINAL FRAME REACHED IS {bmc_data_last_depth}\n")
         else:
             for part in depth_reached.split("."):
                 if "F =" in part:
@@ -158,7 +158,7 @@ def process_circuits(
         print(
             f"Running {selected_engine} on {args.input_circuit.split('/')[-1]} for {TIMELIMIT} second, Depth reached : {FRAME}\n"
         )
-        print(f"{D}\n")
+        print(f"{bmc_data_last_depth}\n")
         # os.chdir("exp_unf")
         return FRAME, -1, True, selected_engine, engine
 
@@ -171,7 +171,7 @@ def process_circuits(
     print(
         f"Running {selected_engine} on {args.input_circuit.split('/')[-1]} for {TIMELIMIT} second, Depth reached : {FRAME}\n"
     )
-    print(f"{D}\n")
+    print(f"{bmc_data_last_depth}\n")
     # os.chdir("exp_unf")
     if CURR_FRAME == FRAME:
         return FRAME, -1, True, selected_engine, engine
@@ -226,7 +226,7 @@ def run_f_mode(args):
                         print(
                             f"Running {selected_engine} on {args.input_circuit.split('/')[-1]} for {mod_time} second, Depth reached : {FRAME}\n"
                         )
-                        print(f"{D}\n")
+                        print(f"{bmc_data_last_depth}\n")
                         START_FRAME = -1
                         # os.chdir('exp_unf')
                         first_simcheck_done = True
@@ -245,7 +245,7 @@ def run_f_mode(args):
                     print(
                         f"Running {selected_engine} on {args.input_circuit.split('/')[-1]} for {mod_time} second, Depth reached : {FRAME}\n"
                     )
-                    print(f"{D}\n")
+                    print(f"{bmc_data_last_depth}\n")
                     first_simcheck_done = True
                     # os.chdir('exp_unf')
                     continue
@@ -342,7 +342,7 @@ def run_v_mode(args):
                             print(
                                 f"Running {selected_engine} on {args.input_circuit.split('/')[-1]} for {mod_time} second, Depth reached : {FRAME}\n"
                             )
-                            print(f"{D}\n")
+                            print(f"{bmc_data_last_depth}\n")
                             START_FRAME = -1
                         # os.chdir('exp_unf')
                             first_simcheck_done = True
@@ -361,7 +361,7 @@ def run_v_mode(args):
                         print(
                             f"Running {selected_engine} on {args.input_circuit.split('/')[-1]} for {mod_time} second, Depth reached : {FRAME}\n"
                         )
-                        print(f"{D}\n")
+                        print(f"{bmc_data_last_depth}\n")
                         first_simcheck_done = True
                     # os.chdir('exp_unf')
                         continue
@@ -403,10 +403,10 @@ def run_v_mode(args):
 
 
 def valid_range(value):
-    damping_factor = float(value)
-    if damping_factor < 0 or damping_factor > 1:
+    time_waste_percentage = float(value)
+    if time_waste_percentage < 0 or time_waste_percentage > 1:
         raise argparse.ArgumentTypeError(f"Value must be between 0 and 1. Provided value : {value}")
-    return damping_factor
+    return time_waste_percentage
 def main():
     global args
     initial_parser = argparse.ArgumentParser(description="BMC Sequence Script", add_help=False)
