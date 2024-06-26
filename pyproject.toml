@@ -11,6 +11,7 @@ deepgate = {git = "https://github.com/pganguli/python-deepgate", rev = "main"}
 pandas = "^2.2.2"
 torch-geometric = "^2.5.3"
 torch = {version = "^2.3.1+cpu", source = "pytorch-cpu-src"}
+torch-scatter = "^2.1.2"
 
 [[tool.poetry.source]]
 name = "pytorch-cpu-src"
