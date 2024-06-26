@@ -1,8 +1,9 @@
 [tool.poetry]
 name = "bmc-gnn"
 version = "0.1.0"
-description = ""
+description = "BMC sequence generation using embeddings from a GNN."
 authors = ["Adriz Chanda <adrizchanda1303@gmail.com>", "Prateek Ganguli <prateek.ganguli@gmail.com>"]
+readme = "README.md"
 packages = [{include = "bmc_gnn"}]
 
 [tool.poetry.dependencies]

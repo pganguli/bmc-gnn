@@ -1,3 +1,6 @@
-train_data_csv/
-test_data_csv/
+bmc_data_circuits/
 circuits/
+mab_bmc_sat_circuits_reported/
+mab_bmc_unsat_circuits_reported/
+test_data_csv/
+train_data_csv/
