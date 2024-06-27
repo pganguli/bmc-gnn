@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""DeepGate2 rowsum of embedding tensor.
+"""DeepGate2 row aggregate of embedding tensor.
 
-Produces a 128 sized vector with float values by taking row-sum
-of a g x 128 tensor obtained from DeepGate2, where g is the
-number of gates in the input circuit.
+Produces a 128 sized vector with float values by taking an
+aggregate on rows of a g x 128 tensor obtained from DeepGate2,
+where g is the number of gates in the input circuit.
 
 """
 
@@ -22,14 +22,14 @@ def produce_embedding(circuit_file: Path) -> torch.Tensor:
 
     graph = parser.read_aiger(circuit_file)
     hs, _ = model(graph)
-    hs_rowsum = torch.sum(hs, dim=0)
+    hs_rowavg = torch.mean(hs, dim=0)
 
-    return hs_rowsum
+    return hs_rowavg
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        prog="rowsum_embedding.py", description="DeepGate2 rowsum of embedding tensor."
+        prog="rowavg_embedding.py", description="DeepGate2 rowavg of embedding tensor."
     )
     parser.add_argument(
         "-c",
@@ -41,16 +41,16 @@ def main() -> None:
     parser.add_argument(
         "-o",
         "--output-pkl-file",
-        help="Path to pickle file to save 128 sized row-sum'd embedding vector.",
+        help="Path to pickle file to save 128 sized row-avg'd embedding vector.",
         required=True,
         type=Path,
     )
     args = parser.parse_args()
 
-    hs_rowsum = produce_embedding(args.circuit_file)
+    hs_rowavg = produce_embedding(args.circuit_file)
 
     with open(args.output_pkl_file, "wb") as pkl_file:
-        pickle.dump(hs_rowsum, pkl_file)
+        pickle.dump(hs_rowavg, pkl_file)
 
 
 if __name__ == "__main__":
