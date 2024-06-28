@@ -31,6 +31,6 @@ if [ -z "${ORIG_CIRCUIT+x}" ] || [ -z "${UNROLLED_CIRCUIT+x}" ]; then
   echo "One or more mandatory options missing." >&2; usage; exit 1
 fi
 
-DEPTH=$(echo "${UNROLLED_CIRCUIT}" | sed -e 's/\.aig$//; s/^.*_//; s/^0*//')
+DEPTH=$(echo "${ORIG_CIRCUIT}" | sed -e 's/\.aig$//; s/^.*_//; s/^0*//')
 #abc -c "read ${ORIG_CIRCUIT}; &get; &frames -F ${DEPTH} -s -b; &write ${UNROLLED_CIRCUIT}"
 abc -c "read ${ORIG_CIRCUIT}; &get; &frames -F ${DEPTH} -s -b -i; &write ${UNROLLED_CIRCUIT}"

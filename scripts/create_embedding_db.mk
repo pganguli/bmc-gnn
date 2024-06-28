@@ -13,7 +13,7 @@ all: ${PICKLES}
 	poetry run ./rowavg_embedding.py -c "$<" -o "$@" && rm "$<"
 
 %.aig:
-	./unroll_circuit.sh "${CIRCUIT}" "$@"
+	./unroll_circuit.sh -c "${CIRCUIT}" -u "$@"
 
 clean:
 	-rm -f ${PICKLES}
