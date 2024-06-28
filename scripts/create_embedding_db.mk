@@ -5,7 +5,7 @@ CIRCUIT ?= ../data/chosen_circuits/6s7.aig
 MAX_DEPTH ?= 10
 PREFIX ?= /tmp
 
-PICKLES := $(foreach n, $(shell seq -w 1 $(MAX_DEPTH)), ${PREFIX}/$(notdir $(basename ${CIRCUIT}))_$(n).pkl)
+PICKLES := $(foreach n, $(shell seq -w 2 $(MAX_DEPTH)), ${PREFIX}/$(notdir $(basename ${CIRCUIT}))_$(n).pkl)
 
 all: ${PICKLES}
 	
