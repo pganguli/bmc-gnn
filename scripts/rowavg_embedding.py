@@ -16,11 +16,16 @@ import torch
 
 
 def produce_embedding(circuit_file: Path) -> torch.Tensor:
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     model = deepgate.Model()
     model.load_pretrained()
-    parser = deepgate.AigParser()
+    model = model.to(device)
 
+    parser = deepgate.AigParser()
     graph = parser.read_aiger(circuit_file)
+    graph = graph.to(device)
+
     hs, _ = model(graph)
     hs_rowavg = torch.mean(hs, dim=0)
 
