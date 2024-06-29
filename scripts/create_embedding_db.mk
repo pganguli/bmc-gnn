@@ -9,11 +9,14 @@ PICKLES := $(foreach n, $(shell seq -w 2 $(MAX_DEPTH)), ${PREFIX}/$(notdir $(bas
 
 all: ${PICKLES}
 	
-%.pkl: %.aig
+%.pkl: %.aig ${PREFIX}/
 	poetry run ./rowavg_embedding.py -c "$<" -o "$@" && rm "$<"
 
-%.aig:
+%.aig: ${PREFIX}/
 	./unroll_circuit.sh -c "${CIRCUIT}" -u "$@"
+
+${PREFIX}/:
+	mkdir -p "${PREFIX}"
 
 clean:
 	-rm -f ${PICKLES}

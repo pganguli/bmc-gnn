@@ -5,12 +5,12 @@ usage () {
   echo "Return the max depth reached by any bmc engine for a given circuit.
 
 Usage:
-$(basename "$0") [-h] -c <aig_file>
+$(basename "$0") [-h] -c <circuit_name>
 
 where:
     -h      Print this message and exit.
     -c <aig_file>
-            AIG file for the input circuit." >&2
+    File name for the input circuit (without '.aig')." >&2
 }
 
 while getopts ':hc:' option; do
@@ -28,4 +28,4 @@ if [ -z "${CIRCUIT+x}" ]; then
   echo "One or more mandatory options missing." >&2; usage; exit 1
 fi
 
-sort <(for i in ../data/bmc_data_csv/bmc*/${CIRCUIT}.csv; do tail -n 1 ${i}; done) | tail -n 1 | cut -f 1 -d,
+sort <(for i in ../data/bmc_data_csv/bmc*/"${CIRCUIT}.csv"; do tail -n 1 "${i}"; done) | tail -n 1 | cut -f 1 -d,
