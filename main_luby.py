@@ -15,6 +15,7 @@ import pickle
 from bmc_gnn.extract_frame_time import extract_frame_time
 from bmc_gnn.most_similar_circuit import most_similar_circuit
 from bmc_gnn.unfold_circuit import unfold_circuit
+from bmc_gnn.luby import luby
 
 bmc_data_last_depth: str = ""
 
@@ -202,6 +203,7 @@ def fixed_time_partition_mode(args: any) -> None:
     first_iteration = True
     START_FRAME = 0
     CURRENT_FRAME = 0
+    luby_i = 1
     first_similarity_check_done = False
 
     print(
@@ -238,7 +240,9 @@ def fixed_time_partition_mode(args: any) -> None:
                     print(f"Time wasted in previous iteration: {time_wasted} sec")
                     if time_wasted <= args.p*args.T:
                         print(f'\nTime wasted {time_wasted} < {args.T*args.p}')
-                        args.T *= 2
+                        luby_i += 1
+                        print(f"\nNext time slot = {args.T} * luby({luby_i}) = {args.T} * {luby(luby_i)} = {args.T * luby(luby_i)}")
+                        args.T *= luby(luby_i)
                         FLAGS = f"-S {START_FRAME} -T {args.T} -F 0 -v"
                         print(f"\nStarting at DEPTH ({START_FRAME}): \n")
 

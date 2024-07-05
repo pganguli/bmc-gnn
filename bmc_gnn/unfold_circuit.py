@@ -12,7 +12,7 @@ def unfold_circuit(circuit_file, level, unfold_path):
     output_file = f"{name}_unf{level}.aig"
     output_path = f"{os.path.join(unfolding_folder, output_file)}"
     # Construct command string
-    command_string = f"read_aiger {circuit_file}; &get; &frames -F {level} -s -b; &write {output_path}"
+    command_string = f"read_aiger {circuit_file}; &get; &frames -F {level} -s -b -i; &write {output_path}"
 
     # Execute command with stdout and stderr suppression
     try:

@@ -1,67 +1,56 @@
 import glob
 import os
-from multiprocessing import Manager, Process
+import deepgate
+import torch
+import pickle
+import warnings
+warnings.filterwarnings("ignore")
 
-from bmc_gnn.cosine_similarity import cosine_compare
-
-
-def compare_files(file_list, circuit, result_list):
-    local_max_similarity = -1
-    local_most_similar_circuit = None
-    for file_path in file_list:
-        try:
-            similarity = cosine_compare(circuit, file_path)
-            similarity_value = similarity[1].item()
-            if similarity_value > local_max_similarity:
-                local_max_similarity = similarity_value
-                local_most_similar_circuit = similarity[0]
-        except Exception as e:
-            print(f"Error comparing file {file_path}: {str(e)}")
-    result_list.append((local_most_similar_circuit, local_max_similarity))
-
+def compare_files(file, circuit, result_list):
+    max_cos = 0
+    cos = torch.nn.CosineSimilarity(dim=0)
+    with open(file, "rb") as pkl_file:
+        friend_tensor = pickle.load(pkl_file)
+    max_cos = cos(circuit, friend_tensor)
+    result_list.append((file, max_cos))
 
 def most_similar_circuit(circuit, level, path, num_processes=8):
-    cir_name = (circuit.split("/")[-1]).split("_")
-    # print(cir_name)
-    current_directory = path
-    manager = Manager()
-    result_list = manager.list()
-    processes = []
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = deepgate.Model()
+    model.load_pretrained()
+    model = model.to(device)
+    
+    parser = deepgate.AigParser()
+    graph_1 = parser.read_aiger(circuit)
+    graph_1 = graph_1.to(device)
 
+    hs_1, _ = model(graph_1)
+    row_avg = torch.mean(hs_1, dim=0)
+    result_list = []
     # Collect all relevant files
     files = []
-    for subdir in os.listdir(current_directory):
-        if cir_name[0] not in subdir:
-            subdir_path = os.path.join(current_directory, subdir)
-            if os.path.isdir(subdir_path):
-                files.extend(glob.glob(os.path.join(subdir_path, f"*_unf{level}.aig")))
+    path = "/home/prateek/chosen_circuits/"
+    for subdir in os.listdir(path):
+        subdir_path = os.path.join(path, subdir)
+        if os.path.isdir(subdir_path):
+            files.extend(glob.glob(os.path.join(subdir_path, f"*_{level}.pkl")))
 
-    # Split files into chunks for each process
-    file_chunks = [files[i::num_processes] for i in range(num_processes)]
-
-    # Start processes
-    for chunk in file_chunks:
-        p = Process(target=compare_files, args=(chunk, circuit, result_list))
-        processes.append(p)
-        p.start()
-
-    # Join processes
-    for p in processes:
-        p.join()
-
+    for file in files:
+        compare_files(file, row_avg, result_list)
     # Determine the most similar circuit
     max_similarity = -1
     most_similar_circuit = None
-    for circuit_path, similarity in result_list:
+
+    for known_circuit, similarity in result_list:
         if similarity > max_similarity:
             max_similarity = similarity
-            most_similar_circuit = circuit_path
+            most_similar_circuit = known_circuit
+
     # Return the most similar circuit's filename without extension and split before '_'
     if most_similar_circuit:
-        filename = os.path.basename(most_similar_circuit)
-        filename_without_extension = os.path.splitext(filename)[0]
-        filename_before_underscore = filename_without_extension.split("_")[0]
-        return filename_before_underscore
+        filename = os.path.basename(most_similar_circuit).split(".")[0]
+        filename = filename.split('_')[0]
+        return filename
     else:
         print("No similar circuit found.")
         return None

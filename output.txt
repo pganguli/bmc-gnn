@@ -1,0 +1,163 @@
+prateek@acmu-X10SRA:~/bmc-gnn2$ ./main.py -f -input_circuit data/mab_bmc_unsat_circuits_reported/6s188.aig -csv_path data/train_data_csv -unfold_path /tmp -T 60 -total_time 3600 -UNFOLD_FRAME 2
+
+Total execution time: 3600 seconds (Start to End of the Framework)
+
+=========================================================================================================================================================================
+
+best friend selected
+DEPTH (2): DeepGate2 execution + BMC engine selection: 0.97 secs
+
+Outcome at DEPTH (2): Most similar circuit: 6s310r.aig, Best BMC engine for 6s188.aig at Depth 2: bmc3r
+
+Running bmc3r on 6s188.aig for 60 seconds, Depth reached: 29
+
+29 + : Var =   56565. Cla =   230377. Conf = 292160. Learn =  64593.    1 MB  42 MB    43.03 sec
+
+=========================================================================================================================================================================
+
+Time wasted in previous iteration: 16.97 sec
+
+Starting at DEPTH (29): 
+
+Running bmc3r on 6s188.aig for 120 seconds, Depth reached: 32
+
+32 + : Var =   63690. Cla =   259944. Conf = 315155. Learn =  51958.    1 MB  31 MB    43.72 sec
+
+=========================================================================================================================================================================
+
+Time wasted in previous iteration: 76.28 sec
+
+Starting at DEPTH (32): 
+
+Running bmc3r on 6s188.aig for 240 seconds, Depth reached: 34
+
+34 + : Var =   69006. Cla =   281847. Conf = 683617. Learn =  89332.    1 MB  41 MB   110.45 sec
+
+=========================================================================================================================================================================
+
+Time wasted in previous iteration: 129.55 sec
+
+Starting at DEPTH (34): 
+
+Running bmc3r on 6s188.aig for 480 seconds, Depth reached: 34
+
+34 + : Var =   68880. Cla =   281388. Conf = 947104. Learn =  88122.    1 MB  40 MB   161.80 sec
+
+=========================================================================================================================================================================
+
+No progress, computing new similar circuit
+best friend selected
+DEPTH (34): DeepGate2 execution + BMC engine selection: 10.02 secs
+
+Outcome at DEPTH (34): Most similar circuit: 6s38.aig, Best BMC engine for 6s188.aig at Depth 34: bmc3u
+
+Running bmc3u on 6s188.aig for 480 seconds, Depth reached: 38
+
+38 + : Var =   79896. Cla =   326609. Conf =1547893. Learn = 160192.    1 MB  54 MB   364.00 sec
+
+=========================================================================================================================================================================
+
+Time wasted in previous iteration: 116.0 sec
+
+Starting at DEPTH (38): 
+
+Running bmc3u on 6s188.aig for 960 seconds, Depth reached: 40
+
+40 + : Var =   85152. Cla =   348280. Conf =2793185. Learn = 229632.    1 MB  71 MB   799.88 sec
+
+=========================================================================================================================================================================
+
+Time wasted in previous iteration: 160.12 sec
+
+Starting at DEPTH (40): 
+
+================================================================================ TIMEOUT ================================================================================
+
+41 + : Var =   87780. Cla =   359114. Conf =3121256. Learn = 237789.    1 MB  72 MB   865.94 sec
+
+
+Total execution time: 3600 seconds (Start to End of the Framework)
+
+=========================================================================================================================================================================
+
+Traceback (most recent call last):
+  File "/home/prateek/bmc-gnn2/./main.py", line 482, in <module>
+    main()
+  File "/home/prateek/bmc-gnn2/./main.py", line 474, in main
+    fixed_time_partition_mode(args)
+  File "/home/prateek/bmc-gnn2/./main.py", line 227, in fixed_time_partition_mode
+    process_circuits(end_time, args, FLAGS, CURRENT_FRAME)
+  File "/home/prateek/bmc-gnn2/./main.py", line 96, in process_circuits
+    best_friend = most_similar_circuit(
+  File "/home/prateek/bmc-gnn2/bmc_gnn/most_similar_circuit.py", line 19, in most_similar_circuit
+    model = deepgate.Model()
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/deepgate/model.py", line 45, in __init__
+    self.aggr_and_strc = TFMlpAggr(self.dim_hidden*1, self.dim_hidden)
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/deepgate/arch/tfmlp.py", line 18, in __init__
+    super(TFMlpAggr, self).__init__(aggr='add', flow='target_to_source' if reverse else 'source_to_target')
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/torch_geometric/nn/conv/message_passing.py", line 173, in __init__
+    module = module_from_template(
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/torch_geometric/template.py", line 22, in module_from_template
+    module_repr = template.render(**kwargs)
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/jinja2/environment.py", line 1299, in render
+    return self.environment.concat(self.root_render_func(ctx))  # type: ignore
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/torch_geometric/nn/conv/propagate.jinja", line 29, in root
+    if not torch.jit.is_scripting() and not is_compiling():
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/jinja2/environment.py", line 1010, in get_template
+    return self._load_template(name, globals)
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/jinja2/environment.py", line 969, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/jinja2/loaders.py", line 137, in load
+    code = environment.compile(source, name, filename)
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/jinja2/environment.py", line 761, in compile
+    source = self._generate(source, name, filename, defer_init=defer_init)
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/jinja2/environment.py", line 689, in _generate
+    return generate(  # type: ignore
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/jinja2/compiler.py", line 117, in generate
+    generator.visit(node)
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/jinja2/visitor.py", line 40, in visit
+    return f(node, *args, **kwargs)
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/jinja2/compiler.py", line 847, in visit_Template
+    have_extends = node.find(nodes.Extends) is not None
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/jinja2/nodes.py", line 188, in find
+    for result in self.find_all(node_type):
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/jinja2/nodes.py", line 202, in find_all
+    yield from child.find_all(node_type)
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/jinja2/nodes.py", line 202, in find_all
+    yield from child.find_all(node_type)
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/jinja2/nodes.py", line 202, in find_all
+    yield from child.find_all(node_type)
+  [Previous line repeated 2 more times]
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/jinja2/nodes.py", line 199, in find_all
+    for child in self.iter_child_nodes():
+KeyboardInterrupt
+
+Total execution time: 3600 seconds (Start to End of the Framework)
+
+=========================================================================================================================================================================
+
+Traceback (most recent call last):
+  File "/home/prateek/bmc-gnn2/./main.py", line 482, in <module>
+    main()
+  File "/home/prateek/bmc-gnn2/./main.py", line 474, in main
+    fixed_time_partition_mode(args)
+  File "/home/prateek/bmc-gnn2/./main.py", line 227, in fixed_time_partition_mode
+    process_circuits(end_time, args, FLAGS, CURRENT_FRAME)
+  File "/home/prateek/bmc-gnn2/./main.py", line 96, in process_circuits
+    best_friend = most_similar_circuit(
+  File "/home/prateek/bmc-gnn2/bmc_gnn/most_similar_circuit.py", line 24, in most_similar_circuit
+    graph_1 = parser.read_aiger(circuit)
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/deepgate/parser.py", line 119, in read_aiger
+    x_data, edge_index = aig_to_xdata(aig_path)
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/deepgate/utils/aiger_utils.py", line 288, in aig_to_xdata
+    f = str(aiger.BoolExpr(aig))
+  File "<attrs generated repr aiger.expr.BoolExpr>", line 13, in __repr__
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/aiger/aig.py", line 141, in __repr__
+    return writer.dump(self)
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/aiger/writer.py", line 89, in dump
+    omap, lmap = circ(inputs=inputs, latches=latches, lift=lift)
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/aiger/aig.py", line 252, in __call__
+    for gate in node_batch:
+  File "/home/prateek/deepgate2-venv/lib/python3.9/site-packages/aiger/common.py", line 198, in dfs
+    yield node
+KeyboardInterrupt
