@@ -81,7 +81,7 @@ def process_circuits(end_time: float, args: any, FLAGS: str, CURRENT_FRAME: int,
     )
     # Find most similar circuit and extract frame times
     best_friend = most_similar_circuit(
-        input_circuit_unfolded, args.UNFOLD_FRAME, args.unfold_path
+        input_circuit_unfolded, args.UNFOLD_FRAME, args
     ) 
     engine_list = extract_frame_time(args.UNFOLD_FRAME, args.csv_path, best_friend)
     # Select engine with minimum time
@@ -181,7 +181,8 @@ def fixed_time_partition_mode(args: any) -> None:
                     args.UNFOLD_FRAME, START_FRAME, continue_loop, engine, depth_reached = (
                     process_circuits(end_time, args, FLAGS, CURRENT_FRAME, modified_time))
                     args.UNFOLD_FRAME += 1
-                    START_FRAME += 1
+                    if START_FRAME != -1:
+                        START_FRAME += 1
                     if not continue_loop:
                         break
                     first_similarity_check_done = True
@@ -218,6 +219,7 @@ def fixed_time_partition_mode(args: any) -> None:
                         START_FRAME = args.UNFOLD_FRAME
                         if CURRENT_FRAME == START_FRAME:
                             START_FRAME = -1
+                            args.UNFOLD_FRAME +=1
                         else:
                             args.UNFOLD_FRAME +=1
                             START_FRAME +=1
@@ -235,12 +237,14 @@ def fixed_time_partition_mode(args: any) -> None:
                         process_circuits(end_time, args, FLAGS, CURRENT_FRAME, modified_time)
                         )
                         args.UNFOLD_FRAME += 1
-                        START_FRAME += 1
+                        if START_FRAME != -1:
+                            START_FRAME += 1
                         if not continue_loop:
                             break
                         continue
             else:
                 print("No progress, computing new similar circuit")
+                START_FRAME = args.UNFOLD_FRAME
                 luby_i += 1
                 print(f"\nNext time slot = {modified_time} * luby({luby_i}) = {args.T} * {luby(luby_i)} = {args.T * luby(luby_i)}")
                 modified_time = args.T * luby(luby_i)
@@ -249,7 +253,8 @@ def fixed_time_partition_mode(args: any) -> None:
                 process_circuits(end_time, args, FLAGS, CURRENT_FRAME, modified_time)
                 )
                 args.UNFOLD_FRAME += 1
-                START_FRAME += 1
+                if START_FRAME != -1:
+                    START_FRAME += 1
                 if not continue_loop:
                     break
                 continue
@@ -411,6 +416,12 @@ def main():
     parser.add_argument(
         "-UNFOLD_FRAME", type=int, help="Initial unfolding frame", required=True
     )
+
+    parser.add_argument(
+        "-chosen_circuit_path", type=str, help="chosen_circuit_path_to_.pkl files.", required=True
+    )
+
+
 
     args = parser.parse_args(remaining_argv)
 

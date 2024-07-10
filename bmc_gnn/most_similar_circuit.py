@@ -14,7 +14,7 @@ def compare_files(file, circuit, result_list):
     max_cos = cos(circuit, friend_tensor)
     result_list.append((file, max_cos))
 
-def most_similar_circuit(circuit, level, path, num_processes=8):
+def most_similar_circuit(circuit, level, args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = deepgate.Model()
     model.load_pretrained()
@@ -29,7 +29,7 @@ def most_similar_circuit(circuit, level, path, num_processes=8):
     result_list = []
     # Collect all relevant files
     files = []
-    path = "/home/prateek/chosen_circuits/"
+    path =args.chosen_circuit_path
     for subdir in os.listdir(path):
         subdir_path = os.path.join(path, subdir)
         if os.path.isdir(subdir_path):
