@@ -14,7 +14,7 @@ import pickle
 from bmc_gnn.extract_frame_time import extract_frame_time
 from bmc_gnn.most_similar_circuit import most_similar_circuit
 from bmc_gnn.unfold_circuit import unfold_circuit
-from bmc_gnn.luby import luby
+
 
 bmc_data_last_depth: str = ""
 
@@ -69,19 +69,19 @@ def run_engine(selected_engine: str, circuit: str, FLAGS: str) -> list[str]:
             max_depth = line
     return max_depth
 
-def process_circuits(end_time: float, args: any, FLAGS: str, CURRENT_FRAME: int, modified_time: int):
+def process_circuits(end_time: float, args: any, FLAGS: str, CURRENT_FRAME: int, modified_time: int, k: int):
     time_stamp = time.time()
     engine = None
     input_circuit_name = os.path.basename(args.input_circuit).split(".")[0]
 
     # Unfold input circuit
     print(f'Unfolding at depth: {args.UNFOLD_FRAME}\n')
-    input_circuit_unfolded = unfold_circuit(
-        args.input_circuit, args.UNFOLD_FRAME, args.unfold_path
+    input_circuit_unfolded = unfold_circuit_inductive(
+        args.input_circuit, k+1, args.unfold_path
     )
     # Find most similar circuit and extract frame times
     best_friend = most_similar_circuit(
-        input_circuit_unfolded, args.UNFOLD_FRAME, args
+            input_circuit_unfolded, args.UNFOLD_FRAME, args
     ) 
     engine_list = extract_frame_time(args.UNFOLD_FRAME, args.csv_path, best_friend)
     # Select engine with minimum time
@@ -111,6 +111,7 @@ def process_circuits(end_time: float, args: any, FLAGS: str, CURRENT_FRAME: int,
         f"Outcome at DEPTH ({args.UNFOLD_FRAME}): Most similar circuit: {best_friend}.aig, Best BMC engine for {os.path.basename(args.input_circuit)} at Depth {args.UNFOLD_FRAME}: {engine}\n"
     )
     depth_reached = run_engine(engine, args.input_circuit, FLAGS) ###
+    k+=1
     print(f'{depth_reached}\n') ###
     if depth_reached is None:
         modified_time = int(end_time - time.time())
@@ -127,9 +128,9 @@ def process_circuits(end_time: float, args: any, FLAGS: str, CURRENT_FRAME: int,
     )
 
     if CURRENT_FRAME == args.UNFOLD_FRAME:
-        return args.UNFOLD_FRAME, -1, True, engine, depth_reached
+        return args.UNFOLD_FRAME, -1, True, engine, depth_reached, k
 
-    return args.UNFOLD_FRAME, args.UNFOLD_FRAME, True, engine, depth_reached
+    return args.UNFOLD_FRAME, args.UNFOLD_FRAME, True, engine, depth_reached, k
 
 def extract_data(data: str):
     predictors = re.sub(r"[^0-9 \.]", "", data)
@@ -157,6 +158,7 @@ def fixed_time_partition_mode(args: any) -> None:
     START_FRAME = 0
     CURRENT_FRAME = 0
     luby_i = 1
+    k = 0
     first_similarity_check_done = False
 
     print(
@@ -178,8 +180,8 @@ def fixed_time_partition_mode(args: any) -> None:
                 CURRENT_FRAME = START_FRAME
                 FLAGS = f"-S {START_FRAME} -T {args.T} -F 0 -v"
                 if first_similarity_check_done is not True:
-                    args.UNFOLD_FRAME, START_FRAME, continue_loop, engine, depth_reached = (
-                    process_circuits(end_time, args, FLAGS, CURRENT_FRAME, modified_time))
+                    args.UNFOLD_FRAME, START_FRAME, continue_loop, engine, depth_reached, k = (
+                    process_circuits(end_time, args, FLAGS, CURRENT_FRAME, modified_time, k))
                     args.UNFOLD_FRAME += 1
                     if START_FRAME != -1:
                         START_FRAME += 1
@@ -193,14 +195,13 @@ def fixed_time_partition_mode(args: any) -> None:
                     last_depth_data = extract_data(depth_reached) ###
                     time_wasted = round(modified_time - float(last_depth_data[7]), 2)
                     print(f"Time wasted in previous iteration: {time_wasted} sec")
-                    if time_wasted <= args.p*modified_time:
-                        print(f'\nTime wasted {time_wasted} < {args.T*args.p}')
-                        luby_i += 1
-                        print(f"\nNext time slot = {args.T} * luby({luby_i}) = {args.T} * {luby(luby_i)} = {args.T * luby(luby_i)}")
-                        modified_time = args.T * luby(luby_i)
+                    if time_wasted < args.p*modified_time:
+                        print(f'\nTime wasted {time_wasted} < {args.p*modified_time}')
+                        modified_time *= 2
+                        print(f'\nTime Quantum for this iteration is : {modified_time}')
                         FLAGS = f"-S {START_FRAME} -T {modified_time} -F 0 -v"
                         print(f"\nStarting at DEPTH ({START_FRAME}): \n")
-
+                        
                         depth_reached = run_engine(engine, args.input_circuit, FLAGS)
                         print(f'{depth_reached}\n') ###
 
@@ -229,12 +230,11 @@ def fixed_time_partition_mode(args: any) -> None:
     
                     else:
                         print("Time wastage exceeded permissible limit, computing new similar circuit")
-                        luby_i += 1
-                        print(f"\nNext time slot = {args.T} * luby({luby_i}) = {args.T} * {luby(luby_i)} = {args.T * luby(luby_i)}")
-                        modified_time = args.T  *  luby(luby_i)
+                        
+                        modified_time *= 2
                         FLAGS = f"-S {START_FRAME} -T {modified_time} -F 0 -v"
-                        args.UNFOLD_FRAME, START_FRAME, continue_loop, engine, depth_reached = (
-                        process_circuits(end_time, args, FLAGS, CURRENT_FRAME, modified_time)
+                        args.UNFOLD_FRAME, START_FRAME, continue_loop, engine, depth_reached, k = (
+                        process_circuits(end_time, args, FLAGS, CURRENT_FRAME, modified_time, k)
                         )
                         args.UNFOLD_FRAME += 1
                         if START_FRAME != -1:
@@ -243,14 +243,13 @@ def fixed_time_partition_mode(args: any) -> None:
                             break
                         continue
             else:
-                print("No progress, computing new similar circuit")
+                print("\nNo progress, computing new similar circuit")
                 START_FRAME = args.UNFOLD_FRAME
-                luby_i += 1
-                print(f"\nNext time slot = {modified_time} * luby({luby_i}) = {args.T} * {luby(luby_i)} = {args.T * luby(luby_i)}")
-                modified_time = args.T * luby(luby_i)
+                modified_time *= 2
                 FLAGS = f"-S {START_FRAME} -T {modified_time} -F 0 -v"
-                args.UNFOLD_FRAME, START_FRAME, continue_loop, engine, depth_reached = (
-                process_circuits(end_time, args, FLAGS, CURRENT_FRAME, modified_time)
+                print(FLAGS)
+                args.UNFOLD_FRAME, START_FRAME, continue_loop, engine, depth_reached, k = (
+                process_circuits(end_time, args, FLAGS, CURRENT_FRAME, modified_time, k)
                 )
                 args.UNFOLD_FRAME += 1
                 if START_FRAME != -1:
@@ -416,12 +415,9 @@ def main():
     parser.add_argument(
         "-UNFOLD_FRAME", type=int, help="Initial unfolding frame", required=True
     )
-
     parser.add_argument(
         "-chosen_circuit_path", type=str, help="chosen_circuit_path_to_.pkl files.", required=True
     )
-
-
 
     args = parser.parse_args(remaining_argv)
 
@@ -435,3 +431,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
